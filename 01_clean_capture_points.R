@@ -141,4 +141,4 @@ cp_nosf <- st_drop_geometry(cp_sf) |>
 cp_final <- capture_points_summary |>
   left_join(cp_nosf, by = c("muni_code", "id_capture_point", "cnpj_office")) 
 
-write_rds(cp_final, "/home/francesca/brazil_water/capture_points_cleaned.RDS")
+write_rds(cp_final, "/home/francesca/brazil_water/sisagua/capture_points_cleaned.RDS")
