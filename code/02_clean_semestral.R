@@ -48,11 +48,12 @@ values_numeric <- function(df)
 {
   df_numeric <- df |>
     mutate(
-      value = ifelse(value == "MENOR_LQ", 0, value),
-      value = ifelse(value == "MENOR_LD", 0, value),
+      value = ifelse(value %in% c("MENOR_LQ", "MENOR_LD"), 0, value),
       value = as.numeric(value),
       limit_det = ifelse(is.na(limit_det), limit_quant, limit_det),
-      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant))
+      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant),
+      limit_exceeded = ifelse(pmax(limit_det, limit_quant) > limit_permitted, 1, 0)
+    )
   return(df_numeric)
 }
 sisagua_semestral_2014_num <- values_numeric(sisagua_semestral_2014)
@@ -66,6 +67,26 @@ sisagua_semestral_2021_num <- values_numeric(sisagua_semestral_2021)
 sisagua_semestral_2022_num <- values_numeric(sisagua_semestral_2022)
 sisagua_semestral_2023_num <- values_numeric(sisagua_semestral_2023)
 sisagua_semestral_2024_num <- values_numeric(sisagua_semestral_2024)
+
+# Choose for duplicates maximum value ----------------------------------------
+
+#sisagua_semestral_2017 |>
+#  filter(id_capture_point == "C290570000003", parameter == "Bário") |>
+#  select(id_capture_point, year, semester, parameter, value) |>
+#  arrange(year, semester, value)
+
+#sisagua_semestral_2017 |>
+#  filter(id_capture_point == "C290570000003", parameter == "Bário") |>
+#  group_by(muni_code, id_capture_point, year, semester, parameter) |>
+#  slice_max(value, n = 1) |> slice_head(n = 1)
+
+max_value <- function(df) 
+{
+  new_df <- df |>
+    group_by(muni_code, id_capture_point, year, semester, parameter) |>
+    slice_max(value, n = 1) |> slice_head(n = 1)
+  return(new_df)
+}
 
 # Dictionary -----------------------------------------------------------------
 unique_type_capture_points <- unique(c(sisagua_semestral_2014$type_capture_point,
