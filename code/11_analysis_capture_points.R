@@ -19,13 +19,13 @@ legal_amazon <- c("AC", "AP", "AM",  "MA", "MT", "PA", "RO", "RR", "TO")
 
 # Load cleaned files --------------------------------------------------------
 
-capture_points <- read_rds("/data/brazil_health/SISAGUA/capture_points_withyears.RDS")
+cps_with_years <- read_rds("/data/brazil_health/SISAGUA/capture_points_withyears.RDS")
 
 
 
 # Plots -------------------------------------------------------------------
 
-summary_munis <- capture_points %>%
+summary_munis <- cps_with_years %>%
   group_by(muni_code) %>%
   summarise(
     n_capture_points = n_distinct(id_capture_point),
@@ -95,19 +95,19 @@ ggsave("./output/plots/cp_years_muni.png",
 
 
 # check capture points with more than one lat lon combination
-multiple_coords <- capture_points %>%
+multiple_coords <- cps_with_years %>%
   group_by(id_capture_point) %>%
   mutate(n_combinations = n_distinct(lat, lon)) %>%
   ungroup() %>%
   filter(n_combinations > 1) 
 
 #share of munis and id capture points with multiple coordinates
-length(unique(multiple_coords$muni_code))/length(unique(capture_points$muni_code))      
-length(unique(multiple_coords$id_capture_point))/length(unique(capture_points$id_capture_point))
+length(unique(multiple_coords$muni_code))/length(unique(cps_with_years$muni_code))      
+length(unique(multiple_coords$id_capture_point))/length(unique(cps_with_years$id_capture_point))
 
 
 # 344905 out of 352292 unique id_capture_points also have unique lat long
-cp_with_multiple_locations <- capture_points %>%
+cp_with_multiple_locations <- cps_with_years %>%
   group_by(id_capture_point) %>%
   summarise(
     n_pos = n_distinct(paste(lat, lon))
@@ -116,7 +116,7 @@ cp_with_multiple_locations <- capture_points %>%
   arrange(desc(n_pos))
 
 # are coordinates missing ALWAYS or at ANY time for municipality groups
-muni_year_missing <- capture_points %>%
+muni_year_missing <- cps_with_years %>%
   mutate(
     missing_coord = is.na(lat) | is.na(lon)
   ) %>%
@@ -136,7 +136,7 @@ muni_year_missing <- capture_points %>%
   )
 
 # are coordinates missing ALWAYS or at ANY time for id groups
-id_year_missing <- capture_points %>%
+id_year_missing <- cps_with_years %>%
   mutate(
     missing_coord = is.na(lat) | is.na(lon)
   ) %>%
@@ -155,13 +155,13 @@ id_year_missing <- capture_points %>%
   )
 
 
-cp_final <- readRDS("/data/brazil_health/SISAGUA/capture_points_cleaned.RDS")
+capture_points <- readRDS("/data/brazil_health/SISAGUA/capture_points_cleaned.RDS")
 
 # what is the share of capture points where coordinates fall within Brazil
-sum(cp_final$bra_cp_match == 1, na.rm = T) / sum(!is.na(cp_final$bra_cp_match))
+sum(capture_points$bra_cp_match == 1, na.rm = T) / sum(!is.na(capture_points$bra_cp_match))
 # ~94%
 
 # what is the share of capture points where coordinates fall within recorded municipality
-sum(cp_final$muni_cp_match == 1, na.rm = T) / sum(!is.na(cp_final$muni_cp_match))
+sum(capture_points$muni_cp_match == 1, na.rm = T) / sum(!is.na(capture_points$muni_cp_match))
 # ~93%
 
