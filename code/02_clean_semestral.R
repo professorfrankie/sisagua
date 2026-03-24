@@ -51,8 +51,7 @@ values_numeric <- function(df)
       value = ifelse(value %in% c("MENOR_LQ", "MENOR_LD"), 0, value),
       value = as.numeric(value),
       limit_det = ifelse(is.na(limit_det), limit_quant, limit_det),
-      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant),
-      limit_exceeded = ifelse(pmax(limit_det, limit_quant) > limit_permitted, 1, 0)
+      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant)
     )
   return(df_numeric)
 }
@@ -84,7 +83,14 @@ max_value <- function(df)
 {
   new_df <- df |>
     group_by(muni_code, id_capture_point, year, semester, parameter) |>
-    slice_max(value, n = 1) |> slice_head(n = 1)
+    slice_max(value, n = 1) |> slice_head(n = 1) |>
+    mutate(
+      limit_exceeded = ifelse(
+        is.na(limit_det) & is.na(limit_quant),
+        NA,
+        ifelse(pmax(limit_det, limit_quant, na.rm = TRUE) > limit_permitted, 1, 0)
+      )
+    )
   return(new_df)
 }
 
