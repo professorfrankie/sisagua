@@ -31,17 +31,9 @@ load_data <- function(year)
                value = gsub(",", ".", value)) # fiddle around with coding of value
     }
 
-sisagua_semestral_2014 <- load_data(2014)
-sisagua_semestral_2015 <- load_data(2015)
-sisagua_semestral_2016 <- load_data(2016)
-sisagua_semestral_2017 <- load_data(2017)
-sisagua_semestral_2018 <- load_data(2018)
-sisagua_semestral_2019 <- load_data(2019)
-sisagua_semestral_2020 <- load_data(2020)
-sisagua_semestral_2021 <- load_data(2021)
-sisagua_semestral_2022 <- load_data(2022) 
-sisagua_semestral_2023 <- load_data(2023)
-sisagua_semestral_2024 <- load_data(2024)
+sisagua_semestral <- lapply(2014:2024, load_data) |> 
+  bind_rows()
+
 
 # Set values as numeric ------------------------------------------------------
 values_numeric <- function(df) {
@@ -55,22 +47,14 @@ values_numeric <- function(df) {
       value = ifelse(is.na(value), 0, value),
       value = ifelse(value == ".", 0, value),
       value = as.numeric(sub("\\.(?=.*\\.)", "", value, perl = TRUE)),
-      limit_det = ifelse(is.na(limit_det), limit_quant, limit_det),
-      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant)
+      limit_det = ifelse(is.na(limit_det), limit_quant, limit_det), # check for non-unique limit_det
+      limit_quant = ifelse(is.na(limit_quant), limit_det, limit_quant) # check for non-unique limit_quant
     )
   return(df_numeric)
 }
-sisagua_semestral_2014_num <- values_numeric(sisagua_semestral_2014)
-sisagua_semestral_2015_num <- values_numeric(sisagua_semestral_2015)
-sisagua_semestral_2016_num <- values_numeric(sisagua_semestral_2016)
-sisagua_semestral_2017_num <- values_numeric(sisagua_semestral_2017)
-sisagua_semestral_2018_num <- values_numeric(sisagua_semestral_2018)
-sisagua_semestral_2019_num <- values_numeric(sisagua_semestral_2019)
-sisagua_semestral_2020_num <- values_numeric(sisagua_semestral_2020)
-sisagua_semestral_2021_num <- values_numeric(sisagua_semestral_2021)
-sisagua_semestral_2022_num <- values_numeric(sisagua_semestral_2022)
-sisagua_semestral_2023_num <- values_numeric(sisagua_semestral_2023)
-sisagua_semestral_2024_num <- values_numeric(sisagua_semestral_2024)
+
+sisagua_semestral_num <- values_numeric(sisagua_semestral)
+
 
 # Choose for duplicates maximum value ----------------------------------------
 
@@ -88,66 +72,22 @@ max_value <- function(df)
 {
   new_df <- df |>
     group_by(muni_code, id_capture_point, year, semester, parameter) |>
-    slice_max(value, n = 1) |> slice_head(n = 1) |>
+    slice_max(value, n = 1) |> slice_head(n = 1) |> # LV: need to think about whether this makes sense
     mutate(
-      limit_exceeded = ifelse(
-        is.na(limit_det) & is.na(limit_quant),
-        NA,
-        ifelse(pmax(limit_det, limit_quant, na.rm = TRUE) > limit_permitted, 1, 0)
-      )
+      limit_exceeded = ifelse(value > limit_permitted, 1, 0)
     )
   return(new_df)
 }
 
-sisagua_semestral_2014_max <- max_value(sisagua_semestral_2014_num)
-sisagua_semestral_2015_max <- max_value(sisagua_semestral_2015_num)
-sisagua_semestral_2016_max <- max_value(sisagua_semestral_2016_num)
-sisagua_semestral_2017_max <- max_value(sisagua_semestral_2017_num)
-sisagua_semestral_2018_max <- max_value(sisagua_semestral_2018_num)
-sisagua_semestral_2019_max <- max_value(sisagua_semestral_2019_num)
-sisagua_semestral_2020_max <- max_value(sisagua_semestral_2020_num)
-sisagua_semestral_2021_max <- max_value(sisagua_semestral_2021_num)
-sisagua_semestral_2022_max <- max_value(sisagua_semestral_2022_num)
-sisagua_semestral_2023_max <- max_value(sisagua_semestral_2023_num)
-sisagua_semestral_2024_max <- max_value(sisagua_semestral_2024_num)
+sisagua_semestral_max <- max_value(sisagua_semestral_num)
 
 
 # Dictionary -----------------------------------------------------------------
-unique_type_capture_points <- unique(c(sisagua_semestral_2014$type_capture_point,
-                                       sisagua_semestral_2015$type_capture_point,
-                                       sisagua_semestral_2016$type_capture_point,
-                                       sisagua_semestral_2017$type_capture_point,
-                                       sisagua_semestral_2018$type_capture_point,
-                                       sisagua_semestral_2019$type_capture_point,
-                                       sisagua_semestral_2020$type_capture_point,
-                                       sisagua_semestral_2021$type_capture_point,
-                                       sisagua_semestral_2022$type_capture_point,
-                                       sisagua_semestral_2023$type_capture_point,
-                                       sisagua_semestral_2024$type_capture_point))
+unique_type_capture_points <- unique(sisagua_semestral_max$type_capture_point)
 
-unique_parameter_groups <- unique(c(sisagua_semestral_2014$parameter_group,
-                                    sisagua_semestral_2015$parameter_group,
-                                    sisagua_semestral_2016$parameter_group,
-                                    sisagua_semestral_2017$parameter_group,
-                                    sisagua_semestral_2018$parameter_group,
-                                    sisagua_semestral_2019$parameter_group,
-                                    sisagua_semestral_2020$parameter_group,
-                                    sisagua_semestral_2021$parameter_group,
-                                    sisagua_semestral_2022$parameter_group,
-                                    sisagua_semestral_2023$parameter_group,
-                                    sisagua_semestral_2024$parameter_group))
+unique_parameter_groups <- unique(sisagua_semestral_max$parameter_group)
 
-unique_parameters <- unique(c(sisagua_semestral_2014$parameter,
-                              sisagua_semestral_2015$parameter,
-                              sisagua_semestral_2016$parameter,
-                              sisagua_semestral_2017$parameter,
-                              sisagua_semestral_2018$parameter,
-                              sisagua_semestral_2019$parameter,
-                              sisagua_semestral_2020$parameter,
-                              sisagua_semestral_2021$parameter,
-                              sisagua_semestral_2022$parameter,
-                              sisagua_semestral_2023$parameter,
-                              sisagua_semestral_2024$parameter))
+unique_parameters <- unique(sisagua_semestral_max$parameter)
 
 type_cp_dict <- tibble::tribble(
   ~type_capture_point_PRT,   ~type_capture_point_EN,
@@ -321,26 +261,7 @@ dictionary <- function(df) {
   return(new_df)
 }
 
-sisagua_semestral_2014_dict <- dictionary(sisagua_semestral_2014_max)
-sisagua_semestral_2015_dict <- dictionary(sisagua_semestral_2015_max)
-sisagua_semestral_2016_dict <- dictionary(sisagua_semestral_2016_max)
-sisagua_semestral_2017_dict <- dictionary(sisagua_semestral_2017_max)
-sisagua_semestral_2018_dict <- dictionary(sisagua_semestral_2018_max)
-sisagua_semestral_2019_dict <- dictionary(sisagua_semestral_2019_max)
-sisagua_semestral_2020_dict <- dictionary(sisagua_semestral_2020_max)
-sisagua_semestral_2021_dict <- dictionary(sisagua_semestral_2021_max)
-sisagua_semestral_2022_dict <- dictionary(sisagua_semestral_2022_max)
-sisagua_semestral_2023_dict <- dictionary(sisagua_semestral_2023_max)
-sisagua_semestral_2024_dict <- dictionary(sisagua_semestral_2024_max)
+sisagua_semestral_dict <- dictionary(sisagua_semestral_max)
 
-write_rds(sisagua_semestral_2014_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2014_cleaned.RDS")
-write_rds(sisagua_semestral_2015_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2015_cleaned.RDS")
-write_rds(sisagua_semestral_2016_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2016_cleaned.RDS")
-write_rds(sisagua_semestral_2017_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2017_cleaned.RDS")
-write_rds(sisagua_semestral_2018_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2018_cleaned.RDS")
-write_rds(sisagua_semestral_2019_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2019_cleaned.RDS")
-write_rds(sisagua_semestral_2020_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2020_cleaned.RDS")
-write_rds(sisagua_semestral_2021_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2021_cleaned.RDS")
-write_rds(sisagua_semestral_2022_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2022_cleaned.RDS")
-write_rds(sisagua_semestral_2023_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2023_cleaned.RDS")
-write_rds(sisagua_semestral_2024_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_2024_cleaned.RDS")
+write_rds(sisagua_semestral_dict, "/data/brazil_health/SISAGUA/sisagua_semestral_cleaned.RDS")
+
