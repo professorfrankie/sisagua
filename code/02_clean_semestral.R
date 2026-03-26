@@ -72,7 +72,7 @@ max_value <- function(df)
 {
   new_df <- df |>
     group_by(muni_code, id_capture_point, year, semester, parameter) |>
-    slice_max(value, n = 1) |> slice_head(n = 1) |> # LV: need to think about whether this makes sense
+    slice_max(value, n = 1, with_ties = FALSE) |> # LV: need to think about whether this makes sense
     mutate(
       limit_exceeded = ifelse(value > limit_permitted, 1, 0)
     )
