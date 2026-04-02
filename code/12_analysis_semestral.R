@@ -28,6 +28,7 @@ sisagua_matched <- readRDS("/data/brazil_health/SISAGUA/sisagua_semestral_cps_ma
 
 # ---- Clean municipalities ----
 br_mun_clean <- br_mun |>
+  mutate(code_muni = as.integer(substr(code_muni, 1, 6)))
   filter(st_geometry_type(geometry) %in% c("POLYGON", "MULTIPOLYGON")) |>
   st_transform(crs = 4326)  # WGS84 for Leaflet
 
@@ -36,9 +37,12 @@ years <- 2014:2024
 
 # ---- Precompute yearly sf datasets with all muni-year combinations ----
 all_muni_years <- expand.grid(
-  code_muni = br_mun_clean$code_muni,
+  muni_code = br_mun_clean$code_muni,
   year = years
 )
+
+all_muni_years <- all_muni_years |>
+  mutate(muni_code = as.integer(substr(muni_code, 1, 6)))
 
 # Summarize SISAGUA
 summary_tbl <- sisagua_matched |>
@@ -52,15 +56,17 @@ summary_tbl <- sisagua_matched |>
 
 # Join with all municipality-year combinations
 full_summary <- all_muni_years |>
-  left_join(summary_tbl, by = c("code_muni" = "muni_code", "year" = "year")) |>
+  left_join(summary_tbl, by = c("muni_code", "year")) |>
   mutate(
     n_exceeded = ifelse(is.na(n_exceeded), 0, n_exceeded),
     exceeded_groups = ifelse(is.na(exceeded_groups), "None", exceeded_groups)
   )
 
 # Join with polygon data
-sf_summary_all_years <- br_mun_clean |>
-  left_join(full_summary, by = "code_muni")
+summary_all_years <- full_summary |>
+  left_join(br_mun_clean, by = c("muni_code" = "code_muni"))
+sf_summary_all_years <- st_as_sf(summary_all_years)
+class(sf_summary_all_years)
 
 # ---- UI ----
 ui <- fluidPage(
